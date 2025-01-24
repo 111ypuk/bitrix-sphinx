@@ -1,9 +1,4 @@
 <?php
-/**
- * Created by olegpro.ru.
- * User: Oleg Maksimenko <oleg.39style@gmail.com>
- * Date: 28.05.2017
- */
 
 namespace Olegpro\BitrixSphinx\Entity;
 
@@ -13,12 +8,12 @@ use Bitrix\Main\DB\Result;
 
 class SphinxDataManager extends DataManager
 {
-
     /**
      * Executes the query and returns selection by parameters of the query.
      * This function is an alias to the Query object functions
      *
      * @param array $parameters An array of query parameters
+     *
      * @return Result
      * @throws ArgumentException
      */
@@ -99,5 +94,4 @@ class SphinxDataManager extends DataManager
 
         return $query->exec();
     }
-
 }

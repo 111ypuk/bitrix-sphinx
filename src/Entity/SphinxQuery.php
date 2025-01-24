@@ -1,9 +1,4 @@
 <?php
-/**
- * Created by olegpro.ru.
- * User: Oleg Maksimenko <oleg.39style@gmail.com>
- * Date: 28.05.2017
- */
 
 namespace Olegpro\BitrixSphinx\Entity;
 
@@ -17,34 +12,16 @@ use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\Config\Configuration;
 use Bitrix\Main\Application;
 
-/** @property Base $entity */
-
+/**
+ * @property Base $entity
+ */
 class SphinxQuery extends Query
 {
-    /**
-     * @var bool
-     */
-    private $disableEscapeMatch = false;
-
-    /**
-     * @var null|bool
-     */
-    private $useConnectionMasterOnly = null;
-
-    /**
-     * @var bool
-     */
-    private $disableQuoteAliasSelect = false;
-
-    /**
-     * @var
-     */
-    protected $match;
-
-    /**
-     * @var array
-     */
-    protected $option = [];
+    private bool $disableEscapeMatch = false;
+    private ?bool $useConnectionMasterOnly = null;
+    private bool $disableQuoteAliasSelect = false;
+    protected array|string $match = [];
+    protected array $option = [];
 
     /**
      * For disable table alias
@@ -54,10 +31,9 @@ class SphinxQuery extends Query
     protected $custom_base_table_alias = '';
 
     /**
-     * @param Base|Query|string $source
      * @throws Main\ArgumentException
      */
-    public function __construct($source)
+    public function __construct(Base|Query|string $source)
     {
         parent::__construct($source);
 
@@ -74,22 +50,16 @@ class SphinxQuery extends Query
 
     /**
      * Sets a list of fields for SELECT clause
-     *
-     * @param array $select
-     * @return SphinxQuery|Query
      */
-    public function setSelect(array $select)
+    public function setSelect(array $select): static
     {
         return parent::setSelect($select);
     }
 
     /**
      * Sets a list of filters for WHERE clause
-     *
-     * @param array $filter
-     * @return SphinxQuery|Query
      */
-    public function setFilter(array $filter)
+    public function setFilter(array $filter): static
     {
         return parent::setFilter($filter);
     }
@@ -98,29 +68,26 @@ class SphinxQuery extends Query
      * Sets a limit for LIMIT n clause
      *
      * @param int $limit
-     * @return SphinxQuery|Query
      */
-    public function setLimit($limit)
+    public function setLimit($limit): static
     {
         return parent::setLimit($limit);
     }
 
     /**
      * Sets an offset for LIMIT n, m clause
-
+     *
      * @param int $offset
-     * @return SphinxQuery|Query
      */
-    public function setOffset($offset)
+    public function setOffset($offset): static
     {
         return parent::setOffset($offset);
     }
 
     /**
-     * @param null $count
-     * @return SphinxQuery|Query|null
+     * @param bool|null $count
      */
-    public function countTotal($count = null)
+    public function countTotal($count = null): static|null
     {
         return parent::countTotal($count);
     }
@@ -129,9 +96,8 @@ class SphinxQuery extends Query
      * Sets a list of fields for ORDER BY clause
      *
      * @param mixed $order
-     * @return SphinxQuery|Query
      */
-    public function setOrder($order)
+    public function setOrder($order): static
     {
         return parent::setOrder($order);
     }
@@ -140,26 +106,20 @@ class SphinxQuery extends Query
      * Sets a list of fileds in GROUP BY clause
      *
      * @param mixed $group
-     * @return SphinxQuery|Query
      */
-    public function setGroup($group)
+    public function setGroup($group): static
     {
         return parent::setGroup($group);
     }
 
     /**
      * @param array|string $match
+     *
      * @return SphinxQuery
      * @throws Main\ArgumentException
      */
-    public function setMatch($match)
+    public function setMatch(array|string $match): static
     {
-        if (!(is_array($match) || is_string($match))) {
-            throw new Main\ArgumentException(sprintf(
-                'Invalid match'
-            ));
-        }
-
         $this->match = $match;
 
         return $this;
@@ -168,36 +128,26 @@ class SphinxQuery extends Query
     /**
      * Sets a list of fields for OPTION clause
      *
-     * @param array $option
-     * @return SphinxQuery
      * @throws Main\ArgumentException
      */
-    public function setOption(array $option)
+    public function setOption(array $option): static
     {
-        if (!is_array($option)) {
-            throw new Main\ArgumentException(sprintf(
-                'Invalid option'
-            ));
-        }
-
         $this->option = $option;
 
         return $this;
     }
 
     /**
-     * @return string
      * @throws Main\SystemException
      */
-    protected function buildSelect()
+    protected function buildSelect(): string
     {
-        $sql = array();
+        $sql = [];
 
-        /** @var QueryChain $chain */
         foreach ($this->select_chains as $chain) {
             $sql[] = $this->getSqlDefinitionSelect(
                 $chain,
-                ($chain->getLastElement()->getValue()->getColumnName() !== 'id')
+                ($chain->getLastElement()->getValue()->getColumnName() !== 'id'),
             );
         }
 
@@ -205,18 +155,16 @@ class SphinxQuery extends Query
             $sql[] = 1;
         }
 
-        $sql = "\n\t" . join(",\n\t", $sql);
+        $sql = "\n\t" . implode(",\n\t", $sql);
 
         return $sql;
     }
 
     /**
-     * @param QueryChain $chain
-     * @param bool $withAlias
      * @return mixed|string
      * @throws Main\SystemException
      */
-    private function getSqlDefinitionSelect(QueryChain $chain, $withAlias = false)
+    private function getSqlDefinitionSelect(QueryChain $chain, bool $withAlias = false)
     {
         $sqlDef = $chain->getLastElement()->getSqlDefinition();
 
@@ -228,10 +176,7 @@ class SphinxQuery extends Query
         return $sqlDef;
     }
 
-    /**
-     * @return mixed|string
-     */
-    protected function buildWhere()
+    protected function buildWhere(): string
     {
         $sql = parent::buildWhere();
 
@@ -247,64 +192,51 @@ class SphinxQuery extends Query
             $match = trim($match);
 
             if (!empty($match)) {
-
                 $sql = sprintf(
                     (!empty($sql) ? "MATCH('%s')\nAND %s" : "MATCH('%s')"),
                     $this->isDisableEscapeMatch() ? $match : $helper->escape($match),
-                    $sql
+                    $sql,
                 );
-
             }
-
         }
 
         return $sql;
     }
 
-    /**
-     * @return string
-     */
-    protected function buildOption()
+    protected function buildOption(): string
     {
         $connection = $this->entity->getConnection();
 
         $helper = $connection->getSqlHelper();
 
-        $sql = array();
+        $sql = [];
 
         foreach ($this->option as $key => $value) {
             $sql[] = sprintf('%s = %s', $helper->forSql($key), ($value));
         }
 
-        return join(', ', $sql);
+        return implode(', ', $sql);
     }
 
-    protected function buildOrder()
+    protected function buildOrder(): string
     {
         $sql = [];
 
         foreach ($this->order_chains as $chain) {
-             //Рандомная сортировка при использовании
+            //Рандомная сортировка при использовании
             //registerRuntimeField('RAND', new \Bitrix\Main\Entity\ExpressionField('RAND', 'RAND()'));
-            if ($chain->getSqlDefinition() == 'RAND()') {
+            if ($chain->getSqlDefinition() === 'RAND()') {
                 $sql[] = $chain->getSqlDefinition();
             } else {
-
-                $sort = isset($this->order[$chain->getDefinition()])
-                    ? $this->order[$chain->getDefinition()]
-                    : $this->order[$chain->getAlias()];
-
+                $sort = $this->order[$chain->getDefinition()] ?? $this->order[$chain->getAlias()];
                 $connection = $this->entity->getConnection();
-
                 $helper = $connection->getSqlHelper();
-
                 $sqlDefinition = $helper->quote($chain->getAlias());
-
                 $sql[] = $sqlDefinition . ' ' . $sort;
             }
         }
 
-        return join(', ', $sql);
+        return implode(', ', $sql);
     }
 
     /**
@@ -321,7 +253,6 @@ class SphinxQuery extends Query
         $helper = $connection->getSqlHelper();
 
         if ($this->query_build_parts === null) {
-
             foreach ($this->select as $key => $value) {
                 $this->addToSelectChain($value, is_numeric($key) ? null : $key);
             }
@@ -345,14 +276,14 @@ class SphinxQuery extends Query
 
             $sqlFrom = $this->quoteTableSource($this->entity->getDBTableName());
 
-            $this->query_build_parts = array_filter(array(
+            $this->query_build_parts = array_filter([
                 'SELECT' => $sqlSelect,
                 'FROM' => $sqlFrom,
                 'WHERE' => $sqlWhere,
                 'GROUP BY' => $sqlGroup,
                 'HAVING' => $sqlHaving,
                 'ORDER BY' => $sqlOrder,
-            ));
+            ]);
         }
 
         $build_parts = $this->query_build_parts;
@@ -361,9 +292,9 @@ class SphinxQuery extends Query
             $v = $k . ' ' . $v;
         }
 
-        $query = join("\n", $build_parts);
+        $query = implode("\n", $build_parts);
 
-        list($query, $replaced) = $this->replaceSelectAliases($query);
+        [$query, $replaced] = $this->replaceSelectAliases($query);
         $this->replaced_aliases = $replaced;
 
         if ($this->limit > 0) {
@@ -384,6 +315,7 @@ class SphinxQuery extends Query
 
     /**
      * @param $query
+     *
      * @return Main\DB\Result|null
      */
     protected function query($query)
@@ -409,7 +341,7 @@ class SphinxQuery extends Query
                         isset($metaRow['Variable_name'], $metaRow['Value'])
                         && $metaRow['Variable_name'] === 'total'
                     ) {
-                        $cnt = (int) $metaRow['Value'];
+                        $cnt = (int)$metaRow['Value'];
 
                         break;
                     }
@@ -434,10 +366,8 @@ class SphinxQuery extends Query
 
     /**
      * Set disableEscapeMatch enable flag
-     *
-     * @return SphinxQuery|Query
      */
-    public function disableEscapeMatch()
+    public function disableEscapeMatch(): static
     {
         $this->disableEscapeMatch = true;
 
@@ -446,29 +376,20 @@ class SphinxQuery extends Query
 
     /**
      * Set disableEscapeMatch enable flag
-     *
-     * @return SphinxQuery|Query
      */
-    public function enableEscapeMatch()
+    public function enableEscapeMatch(): static
     {
         $this->disableEscapeMatch = false;
 
         return $this;
     }
 
-    /**
-     * @return bool
-     */
-    public function isDisableEscapeMatch()
+    public function isDisableEscapeMatch(): bool
     {
         return $this->disableEscapeMatch;
     }
 
-
-    /**
-     * @return bool
-     */
-    public function isEnableConnectionMasterOnly()
+    public function isEnableConnectionMasterOnly(): bool
     {
         $masterOnly = $this->useConnectionMasterOnly;
 
@@ -483,52 +404,36 @@ class SphinxQuery extends Query
         return ($masterOnly === true);
     }
 
-    /**
-     * @return SphinxQuery|Query
-     */
-    public function disableConnectionMasterOnly()
+    public function disableConnectionMasterOnly(): static
     {
         $this->useConnectionMasterOnly = false;
 
         return $this;
     }
 
-    /**
-     * @return SphinxQuery|Query
-     */
-    public function enableConnectionMasterOnly()
+    public function enableConnectionMasterOnly(): static
     {
         $this->useConnectionMasterOnly = true;
 
         return $this;
     }
 
-    /**
-     * @return bool
-     */
-    public function isDisableQuoteAliasSelect()
+    public function isDisableQuoteAliasSelect(): bool
     {
         return $this->disableQuoteAliasSelect;
     }
 
-    /**
-     * @return SphinxQuery|Query
-     */
-    public function disableQuoteAliasSelect()
+    public function disableQuoteAliasSelect(): static
     {
         $this->disableQuoteAliasSelect = true;
 
         return $this;
     }
 
-    /**
-     * @return SphinxQuery|Query
-     */
-    public function enableQuoteAliasSelect()
+    public function enableQuoteAliasSelect(): static
     {
         $this->disableQuoteAliasSelect = false;
 
         return $this;
     }
-
 }
